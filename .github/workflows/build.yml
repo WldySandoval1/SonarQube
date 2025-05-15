@@ -1,43 +1,46 @@
-name: SonarCloud with Java Analysis
+name: SonarCloud Analysis with Java
 
 on:
   push:
     branches: [ main ]
   pull_request:
     branches: [ main ]
-  workflow_dispatch:
+  workflow_dispatch:  # Permite ejecutar el workflow manualmente
 
 jobs:
-  build-and-analyze:
-    name: Build and SonarCloud Analysis
+  sonarcloud:
+    name: Build and Analyze
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Clonar con todo el historial para mejor análisis
-          
-      # Configurar Java - ajusta la versión según tu proyecto
+
+      # Configurar Java
       - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           java-version: 17
           distribution: 'temurin'
-      
-      # Crear estructura de directorios para compilación
-      - name: Create directory structure
+          
+      # Encontrar y compilar archivos Java
+      - name: Prepare Java environment
         run: |
           mkdir -p target/classes
-          find . -name "*.java" -type f -exec javac -d target/classes {} \; || echo "Compilation failed but continuing"
-      
-      # Ejecutar SonarCloud con binaries configurados
+          echo "Compilando archivos Java..."
+          # Encuentra todos los archivos Java y los compila en target/classes
+          find . -name "*.java" -type f | xargs -I {} echo "Compilando: {}"
+          find . -name "*.java" -type f -exec javac -d target/classes {} \; || echo "Advertencia: Errores de compilación, pero continuando"
+          echo "Archivos compilados:"
+          find target/classes -type f | wc -l
+          
+      # Crear directorio para dependencias (para evitar errores)
+      - name: Create dependency directory
+        run: mkdir -p target/dependency
+          
+      # SonarCloud scan con configuración para Java
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@v2.1.1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.projectKey=WldySandoval1_SonarQube
-            -Dsonar.organization=wldysandoval1
-            -Dsonar.java.binaries=target/classes
-            -Dsonar.java.libraries=target/dependency/*.jar
