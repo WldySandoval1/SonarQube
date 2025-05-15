@@ -1,19 +1,38 @@
-name: Build
+name: SonarCloud Analysis
+
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
   pull_request:
-    types: [opened, synchronize, reopened]
+    branches: [ main ]
+  workflow_dispatch:  # Permite ejecutar el workflow manualmente
+
 jobs:
-  sonarqube:
-    name: SonarQube
+  sonarcloud:
+    name: SonarCloud
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+          fetch-depth: 0  # Clonar con todo el historial para mejor análisis
+
+      # Si tu proyecto necesita compilación (Java/Maven), descomenta estas líneas
+      # - name: Set up JDK 17
+      #   uses: actions/setup-java@v3
+      #   with:
+      #     java-version: 17
+      #     distribution: 'temurin'
+      # - name: Build and compile with Maven
+      #   run: mvn clean install -DskipTests
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@v2.1.1
         env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Necesario para PR decoration
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}    # Token generado en SonarCloud
+        with:
+          args: >
+            -Dsonar.projectKey=WldySandoval1_SonarQube
+            -Dsonar.organization=wldysandoval1
+            -Dsonar.java.binaries=
+            -Dsonar.java.libraries=
